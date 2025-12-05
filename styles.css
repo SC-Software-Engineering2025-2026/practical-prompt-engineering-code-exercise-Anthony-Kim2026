@@ -196,6 +196,16 @@ textarea {
 }
 
 /* Rating stars */
+.prompt-rating { display:flex; align-items:center; gap:6px; margin:8px 0 12px 0; }
+.star{ appearance:none; border:0; background:transparent; cursor:pointer; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:6px; transition:transform .12s ease, color .12s ease; color:#cbd5e0; }
+.star:focus{ outline:2px solid rgba(102,126,234,0.18); transform:translateY(-2px); }
+.star svg{ width:18px; height:18px; pointer-events:none; }
+.star.filled{ color:#f6ad55; }
+.star.filled svg{ filter: drop-shadow(0 1px 0 rgba(0,0,0,0.06)); }
+.star:hover{ transform:translateY(-2px); }
+.rating-label{margin-left:10px;font-size:13px;color:#718096;user-select:none;}
+
+/* Rating stars */
 .prompt-rating { display:flex; gap:6px; margin:8px 0 12px 0; }
 .star{ appearance:none; border:0; background:transparent; cursor:pointer; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:6px; transition:transform .12s ease, color .12s ease; color:#cbd5e0; }
 .star:focus{ outline:2px solid rgba(102,126,234,0.18); transform:translateY(-2px); }

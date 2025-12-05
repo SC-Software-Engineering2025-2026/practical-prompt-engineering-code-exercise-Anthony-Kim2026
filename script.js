@@ -74,50 +74,56 @@ function createPromptCard(prompt) {
     // Rating container
     const ratingWrap = document.createElement('div');
     ratingWrap.className = 'prompt-rating';
-    ratingWrap.setAttribute('aria-label', `Rating for ${prompt.title || 'prompt'}`);
+    ratingWrap.setAttribute('role', 'radiogroup');
+    ratingWrap.setAttribute('aria-label', `Rate prompt effectiveness`);
 
-    // Create 5 stars
     const currentRating = Number(prompt.rating) || 0;
     for (let i = 1; i <= 5; i++) {
-        const star = document.createElement('button');
-        star.type = 'button';
-        star.className = 'star';
-        if (i <= currentRating) star.classList.add('filled');
-        star.setAttribute('aria-label', `${i} star`);
-        star.setAttribute('data-value', String(i));
-        star.tabIndex = 0;
+        const starBtn = document.createElement('button');
+        starBtn.type = 'button';
+        starBtn.className = 'star';
+        if (i <= currentRating) starBtn.classList.add('filled');
+        starBtn.setAttribute('aria-label', `${i} star${i > 1 ? 's' : ''}`);
+        starBtn.setAttribute('aria-checked', i === currentRating ? 'true' : 'false');
+        starBtn.setAttribute('role', 'radio');
+        starBtn.tabIndex = 0;
+        starBtn.innerHTML = `<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><polygon points="10,2 12.59,7.26 18.18,7.27 13.64,11.14 15.23,16.63 10,13.39 4.77,16.63 6.36,11.14 1.82,7.27 7.41,7.26"/></svg>`;
 
-        // Click sets rating
-        star.addEventListener('click', () => {
-            setRating(prompt.id, i);
-        });
+        // Click to set rating
+        starBtn.addEventListener('click', () => setRating(prompt.id, i));
 
         // Hover preview
-        star.addEventListener('mouseover', () => highlightStars(ratingWrap, i));
-        star.addEventListener('focus', () => highlightStars(ratingWrap, i));
-        star.addEventListener('mouseout', () => highlightStars(ratingWrap, currentRating));
-        star.addEventListener('blur', () => highlightStars(ratingWrap, currentRating));
+        starBtn.addEventListener('mouseover', () => highlightStars(ratingWrap, i));
+        starBtn.addEventListener('focus', () => highlightStars(ratingWrap, i));
+        starBtn.addEventListener('mouseout', () => highlightStars(ratingWrap, currentRating));
+        starBtn.addEventListener('blur', () => highlightStars(ratingWrap, currentRating));
 
         // Keyboard support
-        star.addEventListener('keydown', (ev) => {
+        starBtn.addEventListener('keydown', (ev) => {
             if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') {
                 ev.preventDefault();
-                const next = star.nextElementSibling;
+                const next = starBtn.nextElementSibling;
                 if (next) next.focus();
             } else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') {
                 ev.preventDefault();
-                const prev = star.previousElementSibling;
+                const prev = starBtn.previousElementSibling;
                 if (prev) prev.focus();
             } else if (ev.key === 'Enter' || ev.key === ' ') {
                 ev.preventDefault();
-                setRating(prompt.id, Number(star.dataset.value));
+                setRating(prompt.id, i);
             } else if (/^[1-5]$/.test(ev.key)) {
                 setRating(prompt.id, Number(ev.key));
             }
         });
 
-        ratingWrap.appendChild(star);
+        ratingWrap.appendChild(starBtn);
     }
+
+    // Numeric rating display
+    const ratingLabel = document.createElement('span');
+    ratingLabel.className = 'rating-label';
+    ratingLabel.textContent = currentRating ? `${currentRating}/5` : 'Unrated';
+    ratingWrap.appendChild(ratingLabel);
 
     // Footer with delete
     const footer = document.createElement('div');
@@ -153,6 +159,9 @@ function highlightStars(wrapper, count) {
     stars.forEach((s, i) => {
         if (i < count) s.classList.add('filled'); else s.classList.remove('filled');
     });
+    // Update numeric label
+    const label = wrapper.querySelector('.rating-label');
+    if (label) label.textContent = count ? `${count}/5` : 'Unrated';
 }
 
 // Delete a prompt from localStorage
