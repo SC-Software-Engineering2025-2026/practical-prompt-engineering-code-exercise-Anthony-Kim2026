@@ -38,6 +38,13 @@
 
                     <button type="submit" class="btn-save">Save Prompt</button>
                 </form>
+
+                <div class="export-import-bar">
+                    <button id="exportBtn" class="btn-export">Export Prompts</button>
+                    <input type="file" id="importFile" accept="application/json" style="display:none">
+                    <button id="importBtn" class="btn-import">Import Prompts</button>
+                    <span id="importStatus" class="import-status"></span>
+                </div>
             </section>
 
             <section class="prompts-section">
@@ -46,6 +53,15 @@
                     <p class="empty-state">No prompts saved yet. Create your first prompt!</p>
                 </div>
             </section>
+            <div id="mergeDialog" class="merge-dialog" style="display:none">
+                <div class="merge-dialog-content">
+                    <h3>Import Conflict Resolution</h3>
+                    <p>Duplicate prompt IDs detected. How would you like to proceed?</p>
+                    <button id="mergeReplaceBtn" class="btn-merge">Replace All</button>
+                    <button id="mergeSkipBtn" class="btn-merge">Skip Duplicates</button>
+                    <button id="mergeCancelBtn" class="btn-merge">Cancel</button>
+                </div>
+            </div>
         </main>
     </div>
 

@@ -1,3 +1,149 @@
+// --- Export/Import System ---
+const EXPORT_VERSION = '1.0';
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importFile = document.getElementById('importFile');
+const importStatus = document.getElementById('importStatus');
+const mergeDialog = document.getElementById('mergeDialog');
+const mergeReplaceBtn = document.getElementById('mergeReplaceBtn');
+const mergeSkipBtn = document.getElementById('mergeSkipBtn');
+const mergeCancelBtn = document.getElementById('mergeCancelBtn');
+let importBackup = null;
+let importData = null;
+let importDuplicates = [];
+
+function getStats(prompts) {
+    const totalPrompts = prompts.length;
+    const avgRating = totalPrompts ? (prompts.reduce((sum, p) => sum + (Number(p.rating) || 0), 0) / totalPrompts) : 0;
+    const modelCounts = {};
+    prompts.forEach(p => {
+        const model = p.metadata?.model || 'Unknown';
+        modelCounts[model] = (modelCounts[model] || 0) + 1;
+    });
+    let mostUsedModel = 'Unknown';
+    let maxCount = 0;
+    for (const m in modelCounts) {
+        if (modelCounts[m] > maxCount) { mostUsedModel = m; maxCount = modelCounts[m]; }
+    }
+    return {
+        totalPrompts,
+        averageRating: Math.round(avgRating * 100) / 100,
+        mostUsedModel
+    };
+}
+
+function exportPrompts() {
+    try {
+        const prompts = getPrompts();
+        // Validate all prompts
+        prompts.forEach(p => {
+            if (!p.id || !p.title || !p.content) throw new Error('Invalid prompt data');
+        });
+        const stats = getStats(prompts);
+        const exportedAt = new Date().toISOString();
+        const data = {
+            version: EXPORT_VERSION,
+            exportedAt,
+            stats,
+            prompts
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `prompts-export-${exportedAt.replace(/[:.]/g,'-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+        importStatus.textContent = 'Export successful.';
+    } catch (e) {
+        importStatus.textContent = 'Export failed: ' + e.message;
+    }
+}
+
+function handleImportFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        try {
+            const json = JSON.parse(evt.target.result);
+            validateImport(json);
+            importData = json;
+            const existing = getPrompts();
+            const existingIds = new Set(existing.map(p => p.id));
+            importDuplicates = json.prompts.filter(p => existingIds.has(p.id));
+            if (importDuplicates.length > 0) {
+                showMergeDialog();
+            } else {
+                doImport('merge');
+            }
+        } catch (err) {
+            importStatus.textContent = 'Import failed: ' + err.message;
+            rollbackImport();
+        }
+    };
+    reader.onerror = function() {
+        importStatus.textContent = 'Import failed: Could not read file.';
+    };
+    reader.readAsText(file);
+}
+
+function validateImport(json) {
+    if (!json || typeof json !== 'object') throw new Error('Invalid file format');
+    if (json.version !== EXPORT_VERSION) throw new Error('Unsupported export version');
+    if (!Array.isArray(json.prompts)) throw new Error('Missing prompts array');
+    json.prompts.forEach(p => {
+        if (!p.id || !p.title || !p.content) throw new Error('Invalid prompt in import');
+    });
+}
+
+function showMergeDialog() {
+    mergeDialog.style.display = 'flex';
+}
+function hideMergeDialog() {
+    mergeDialog.style.display = 'none';
+}
+
+function doImport(mode) {
+    try {
+        importBackup = getPrompts();
+        let newPrompts;
+        if (mode === 'replace') {
+            newPrompts = importData.prompts;
+        } else if (mode === 'merge') {
+            // Merge: skip duplicates
+            const existing = getPrompts();
+            const existingIds = new Set(existing.map(p => p.id));
+            const toAdd = importData.prompts.filter(p => !existingIds.has(p.id));
+            newPrompts = existing.concat(toAdd);
+        } else {
+            throw new Error('Unknown import mode');
+        }
+        savePrompts(newPrompts);
+        importStatus.textContent = 'Import successful.';
+        hideMergeDialog();
+        renderPrompts();
+    } catch (e) {
+        importStatus.textContent = 'Import failed: ' + e.message;
+        rollbackImport();
+    }
+}
+
+function rollbackImport() {
+    if (importBackup) {
+        savePrompts(importBackup);
+        renderPrompts();
+        importStatus.textContent += ' Rolled back to previous data.';
+    }
+}
+
+exportBtn.addEventListener('click', exportPrompts);
+importBtn.addEventListener('click', () => { importFile.value = ''; importFile.click(); });
+importFile.addEventListener('change', handleImportFile);
+mergeReplaceBtn.addEventListener('click', () => doImport('replace'));
+mergeSkipBtn.addEventListener('click', () => doImport('merge'));
+mergeCancelBtn.addEventListener('click', () => { hideMergeDialog(); importStatus.textContent = 'Import cancelled.'; });
 // --- Metadata Tracking System ---
 function trackModel(modelName, content) {
     if (typeof modelName !== 'string' || !modelName.trim()) {

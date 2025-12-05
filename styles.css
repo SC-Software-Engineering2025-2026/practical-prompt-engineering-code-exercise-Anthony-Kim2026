@@ -112,6 +112,16 @@ textarea {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
+.export-import-bar { display: flex; gap: 12px; align-items: center; margin: 18px 0 0 0; }
+.btn-export, .btn-import { background: #0ea5a4; color: #fff; border: none; padding: 8px 18px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.btn-export:hover, .btn-import:hover { background: #089b99; }
+.import-status { font-size: 13px; color: #64748b; margin-left: 8px; }
+
+.merge-dialog { position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.merge-dialog-content { background:#fff; border-radius:12px; padding:32px 24px; box-shadow:0 4px 24px rgba(0,0,0,0.12); text-align:center; }
+.btn-merge { margin:8px; padding:8px 18px; border-radius:8px; border:none; background:#6366f1; color:#fff; font-weight:600; cursor:pointer; font-size:1rem; }
+.btn-merge:hover { background:#4338ca; }
+
 .btn-save:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
