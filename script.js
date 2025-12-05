@@ -1,3 +1,61 @@
+// --- Metadata Tracking System ---
+function trackModel(modelName, content) {
+    if (typeof modelName !== 'string' || !modelName.trim()) {
+        throw new Error('Model name must be a non-empty string');
+    }
+    if (modelName.length > 100) {
+        throw new Error('Model name must be at most 100 characters');
+    }
+    const createdAt = new Date().toISOString();
+    const tokenEstimate = estimateTokens(content, false);
+    return {
+        model: modelName.trim(),
+        createdAt,
+        updatedAt: createdAt,
+        tokenEstimate
+    };
+}
+
+function updateTimestamps(metadata) {
+    if (!metadata || !metadata.createdAt) {
+        throw new Error('Metadata object must have a createdAt field');
+    }
+    const updatedAt = new Date().toISOString();
+    if (new Date(updatedAt) < new Date(metadata.createdAt)) {
+        throw new Error('updatedAt must be >= createdAt');
+    }
+    return { ...metadata, updatedAt };
+}
+
+function estimateTokens(text, isCode) {
+    if (typeof text !== 'string') throw new Error('Text must be a string');
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    const charCount = text.length;
+    let min = 0.75 * wordCount;
+    let max = 0.25 * charCount;
+    if (isCode) {
+        min *= 1.3;
+        max *= 1.3;
+    }
+    min = Math.round(min);
+    max = Math.round(max);
+    let confidence = 'high';
+    const total = Math.max(min, max);
+    if (total < 1000) confidence = 'high';
+    else if (total < 5000) confidence = 'medium';
+    else confidence = 'low';
+    return { min, max, confidence };
+}
+
+function formatDate(iso) {
+    try {
+        const d = new Date(iso);
+        return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return iso;
+    }
+}
+
 const STORAGE_KEY = 'prompts';
 
 // DOM Elements
@@ -52,6 +110,12 @@ function renderPrompts() {
         return;
     }
 
+    // Sort by createdAt descending
+    prompts.sort((a, b) => {
+        const ad = a.metadata?.createdAt || a.createdAt || 0;
+        const bd = b.metadata?.createdAt || b.createdAt || 0;
+        return new Date(bd) - new Date(ad);
+    });
     prompts.forEach((p) => {
         const card = createPromptCard(p);
         promptsContainer.appendChild(card);
@@ -137,9 +201,54 @@ function createPromptCard(prompt) {
 
     card.appendChild(titleEl);
     card.appendChild(ratingWrap);
-    card.appendChild(contentEl);
-    card.appendChild(footer);
 
+    // --- Metadata Visual Display ---
+    let metadata = prompt.metadata;
+    if (!metadata) {
+        try {
+            metadata = trackModel('Unknown', prompt.content);
+        } catch (e) {
+            metadata = null;
+        }
+    }
+    if (metadata) {
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'prompt-meta';
+
+        // Model name
+        const modelSpan = document.createElement('span');
+        modelSpan.className = 'meta-model';
+        modelSpan.textContent = `Model: ${metadata.model}`;
+        metaDiv.appendChild(modelSpan);
+
+        // Timestamps
+        const createdSpan = document.createElement('span');
+        createdSpan.className = 'meta-date';
+        createdSpan.textContent = `Created: ${formatDate(metadata.createdAt)}`;
+        metaDiv.appendChild(createdSpan);
+
+        const updatedSpan = document.createElement('span');
+        updatedSpan.className = 'meta-date';
+        updatedSpan.textContent = `Updated: ${formatDate(metadata.updatedAt)}`;
+        metaDiv.appendChild(updatedSpan);
+
+        // Token estimate
+        const tokenSpan = document.createElement('span');
+        tokenSpan.className = `meta-tokens confidence-${metadata.tokenEstimate.confidence}`;
+        tokenSpan.textContent = `Tokens: ${metadata.tokenEstimate.min}–${metadata.tokenEstimate.max}`;
+        metaDiv.appendChild(tokenSpan);
+
+        // Confidence color
+        const confSpan = document.createElement('span');
+        confSpan.className = `meta-confidence confidence-${metadata.tokenEstimate.confidence}`;
+        confSpan.textContent = `Confidence: ${metadata.tokenEstimate.confidence}`;
+        metaDiv.appendChild(confSpan);
+
+        card.appendChild(metaDiv);
+    }
+
+    card.appendChild(contentDiv);
+    card.appendChild(footerDiv);
     return card;
 }
 

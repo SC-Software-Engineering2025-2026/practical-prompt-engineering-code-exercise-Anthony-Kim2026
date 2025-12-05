@@ -195,6 +195,16 @@ textarea {
     justify-content: flex-end;
 }
 
+/* Metadata styles */
+.prompt-meta { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 8px 0; font-size: 13px; align-items: center; }
+.meta-model { font-weight: 600; color: #3b82f6; }
+.meta-date { color: #64748b; }
+.meta-tokens { font-weight: 500; }
+.meta-confidence { font-weight: 600; padding: 2px 8px; border-radius: 6px; margin-left: 4px; }
+.confidence-high { color: #16a34a; background: #e7fbe7; }
+.confidence-medium { color: #eab308; background: #fffbe7; }
+.confidence-low { color: #dc2626; background: #fde7e7; }
+
 /* Rating stars */
 .prompt-rating { display:flex; align-items:center; gap:6px; margin:8px 0 12px 0; }
 .star{ appearance:none; border:0; background:transparent; cursor:pointer; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:6px; transition:transform .12s ease, color .12s ease; color:#cbd5e0; }
